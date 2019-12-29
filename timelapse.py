@@ -10,6 +10,7 @@ import yaml
 config = yaml.safe_load(open(os.path.join(sys.path[0], "config.yml")))
 image_number = 0
 
+import glob
 
 def create_timestamped_dir(dir):
     try:
@@ -74,7 +75,16 @@ def capture_image():
             image_number += 1
         else:
             print '\nTime-lapse capture complete!\n'
-            # TODO: This doesn't pop user into the except block below :(.
+            if config['create_video']:
+              print '\nCreating video.\n'
+              os.system('ffmpeg  -framerate 20 -i ' + dir + '/image%05d.jpg -vf format=yuv420p ' + dir + '/timelapse.mp4')  # noqa
+# TODO: This doesn't pop user into the except block below :(.
+            if config['create_gif']:
+              print '\nCreating animated gif.\n'
+              os.system('convert -delay 10 -loop 0 ' + dir + '/image*.jpg ' + dir + '-timelapse.gif')  # noqa
+            for i in glob.glob(os.path.join(dir, "*.jpg")):
+              print("deleting " + i)
+              os.remove(i)
             sys.exit()
 
     except KeyboardInterrupt, SystemExit:
@@ -90,13 +100,4 @@ create_timestamped_dir(dir)
 # Kick off the capture process.
 capture_image()
 
-# TODO: These may not get called after the end of the threading process...
-# Create an animated gif (Requires ImageMagick).
-if config['create_gif']:
-    print '\nCreating animated gif.\n'
-    os.system('convert -delay 10 -loop 0 ' + dir + '/image*.jpg ' + dir + '-timelapse.gif')  # noqa
 
-# Create a video (Requires avconv - which is basically ffmpeg).
-if config['create_video']:
-    print '\nCreating video.\n'
-    os.system('avconv -framerate 20 -i ' + dir + '/image%05d.jpg -vf format=yuv420p ' + dir + '/timelapse.mp4')  # noqa
